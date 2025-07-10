@@ -110,6 +110,265 @@ def inserir_produto(conn, cursor, tabela, dados_do_produto):
         print(f"❌ Erro ao inserir na tabela '{tabela}':", e)
         return None 
 
+def buscar_todas_categorias(conn, cursor):
+    try:
+        cursor.execute("""SELECT * FROM categorias ORDER BY nome ASC""")
+        return cursor.fetchall()
+
+    except Exception as e:
+        print(f"❌ Erro ao buscar categorias:", e)
+        return None 
+
+def buscar_categoria_por_filtro(conn, cursor, filtros={}):
+    # Exemplo de filtros: {'id': 1, 'nome': 'camisas'}
+    try:
+        query = """
+            SELECT c.id, c.nome
+            FROM categorias AS c
+        """
+
+        clausulas_where = []
+        valores = []
+
+        if filtros: 
+            for chave, valor in filtros.items():
+                if chave == 'id':
+                    clausulas_where.append("c.id = %s")
+                    valores.append(valor)
+                elif chave == 'nome':
+                    clausulas_where.append("c.nome LIKE %s")
+                    valores.append(f"%{valor}%")
+
+            if clausulas_where:
+                query += " WHERE " + " AND ".join(clausulas_where)
+
+        cursor.execute(query, tuple(valores))
+        return cursor.fetchall()
+
+    except Error as e:
+        print(f"❌ Erro ao buscar categorias: {e}")
+        return None
+
+def buscar_todos_produtos(conn, cursor):
+    try:
+        cursor.execute("""SELECT 
+    p.id,
+    p.nome AS nome_produto,
+    p.descricao,
+    p.preco,
+    p.estoque,
+    c.nome AS nome_categoria
+    FROM produtos AS p
+    JOIN categorias AS c ON p.categoria_id = c.id""")
+        return cursor.fetchall()
+
+    except Exception as e:
+        print(f"❌ Erro ao buscar todos os produtos:", e)
+        return None 
+
+def buscar_produtos_por_filtro(conn, cursor, filtros={}):
+    # Exemplo de filtros: {'nome': 'camisa polo', 'preco_max': 150.00}
+    try:
+        query = """
+            SELECT p.id, p.nome, p.descricao, p.preco, p.estoque, c.nome AS nome_categoria
+            FROM produtos AS p
+            JOIN categorias AS c ON p.categoria_id = c.id
+        """
+        clausulas_where = []
+        valores = []
+
+        if filtros: 
+            for chave, valor in filtros.items():
+                if chave == 'id':
+                    clausulas_where.append("p.id = %s")
+                    valores.append(valor)
+                elif chave == 'nome':
+                    clausulas_where.append("p.nome LIKE %s")
+                    valores.append(f"%{valor}%")
+                elif chave == 'categoria':
+                    clausulas_where.append("c.nome = %s")
+                    valores.append(valor)
+                elif chave == 'preco_max':
+                    clausulas_where.append("p.preco <= %s")
+                    valores.append(valor)
+                elif chave == 'preco_min':
+                    clausulas_where.append("p.preco >= %s")
+                    valores.append(valor)
+                elif chave == 'estoque':
+                    clausulas_where.append("p.estoque >= %s")
+                    valores.append(valor)
+
+            if clausulas_where:
+                query += " WHERE " + " AND ".join(clausulas_where)
+
+        cursor.execute(query, tuple(valores))
+        return cursor.fetchall()
+
+    except Error as e:
+        print(f"❌ Erro ao buscar produtos: {e}")
+        return None
+
+def atualizar_por_valor_busca(conn, cursor, valor_busca, id_busca, novos_dados={}):
+
+    if None in [valor_busca, id_busca, novos_dados]:
+            print("❌ Dados fornecidos para a atualização estão ínvalidos.")
+            return None
+    try:
+        if valor_busca == "produtos":
+            tabela = "produtos"
+            cursor.execute("SELECT id FROM produtos WHERE id = %s", (id_busca,))
+            resultado = cursor.fetchone()
+
+            if not resultado :
+                print(f"⚠️ Produto com ID {id_busca} não encontrado.")
+                return None
+
+        elif valor_busca == "categorias":
+            tabela = "categorias"
+            cursor.execute("SELECT id FROM categorias WHERE id = %s", (id_busca,))
+            resultado = cursor.fetchone()
+
+            if not resultado :
+                print(f"⚠️ Categoria com ID {id_busca} não encontrado.")
+                return None
+
+        else:
+            print(f"{valor_busca} não encontrado.")
+            return
+
+        #aqui um list compresion em que vai interar cada valor dos dados e por um %s de acordo com dado interado, ex: nome = %s, preco_min = %s....
+        clausulas_set = ", ".join([f"{coluna} = %s" for coluna in novos_dados.keys()])
+        valores = list(novos_dados.values())
+        valores.append(id_busca)
+
+        query = f"UPDATE {tabela} SET {clausulas_set} WHERE id = %s"
+
+        cursor.execute(query, tuple(valores))
+        conn.commit()
+        return cursor.rowcount
+
+    except Error as e:
+        conn.rollback()
+        print(f"❌ Erro ao atualizar os itens: {e}")
+        return None
+
+
+def atualizar_produto(conn, cursor, id_busca, novos_dados={}):
+
+    if not id_busca or not novos_dados:
+            print("❌ Dados fornecidos para a atualização estão ínvalidos.")
+            return None
+    try:
+        #aqui um list compresion em que vai interar cada valor dos dados e por um %s de acordo com dado interado, ex: nome = %s, preco_min = %s....
+        clausulas_set = ", ".join([f"{coluna} = %s" for coluna in novos_dados.keys()])
+        valores = list(novos_dados.values())
+        valores.append(id_busca)
+
+        query = f"UPDATE produtos SET {clausulas_set} WHERE id = %s"
+
+        cursor.execute(query, tuple(valores))
+        conn.commit()
+        return cursor.rowcount
+
+    except Error as e:
+        conn.rollback()
+        print(f"❌ Erro ao atualizar os itens: {e}")
+        return None
+
+def atualizar_categoria(conn, cursor, id_busca, novos_dados={}):
+
+    if not id_busca or not novos_dados:
+            print("❌ Dados fornecidos para a atualização estão ínvalidos.")
+            return None
+    try:
+        #aqui um list compresion em que vai interar cada valor dos dados e por um %s de acordo com dado interado, ex: nome = %s, preco_min = %s....
+        clausulas_set = ", ".join([f"{coluna} = %s" for coluna in novos_dados.keys()])
+        valores = list(novos_dados.values())
+        valores.append(id_busca)
+
+        query = f"UPDATE categorias SET {clausulas_set} WHERE id = %s"
+
+        cursor.execute(query, tuple(valores))
+        conn.commit()
+        return cursor.rowcount
+
+    except Error as e:
+        conn.rollback()
+        print(f"❌ Erro ao atualizar os itens: {e}")
+        return None
+
+def deletar_por_valor_busca(conn, cursor, valor_busca, id_busca):
+
+    if None in [valor_busca, id_busca]:
+            print("❌ Dados fornecidos para a exclusão estão ínvalidos.")
+            return None
+    try:
+        if valor_busca == "produtos":
+            tabela = "produtos"
+            cursor.execute("SELECT id FROM produtos WHERE id = %s", (id_busca,))
+            resultado = cursor.fetchone()
+
+            if not resultado :
+                print(f"⚠️ Produto com ID {id_busca} não encontrado.")
+                return None
+        elif valor_busca == "categorias":
+            tabela = "categorias"
+            cursor.execute("SELECT id FROM categorias WHERE id = %s", (id_busca,))
+            resultado = cursor.fetchone()
+
+            if not resultado :
+                print(f"⚠️ Categoria com ID {id_busca} não encontrado.")
+                return None
+        else:
+            print(f"{valor_busca} não encontrado.")
+            return
+
+        query = f"DELETE FROM {tabela} WHERE id = %s"
+
+        cursor.execute(query, (id_busca,))
+        conn.commit()
+
+        print(f"✅ {valor_busca.capitalize()} com ID {id_busca} deletado com sucesso.")
+        return cursor.rowcount
+
+    except Error as e:
+        conn.rollback()
+        print(f"❌ Erro ao deletar os itens: {e}")
+        return None
+
+def deletar_produto(conn, cursor, id_busca):
+
+    if not id_busca:
+        print("❌ Dados fornecidos para a exclusão estão ínvalidos.")
+        return None
+
+    try:
+        query = f"DELETE FROM produtos WHERE id = %s"
+        cursor.execute(query, (id_busca,))
+        conn.commit()
+        return cursor.rowcount
+
+    except Error as e:
+        conn.rollback()
+        print(f"❌ Erro ao deletar os itens: {e}")
+        return None
+
+def deletar_categoria(conn, cursor, id_busca):
+
+    if not id_busca:
+        print("❌ Dados fornecidos para a exclusão estão ínvalidos.")
+        return None
+
+    try:
+        query = f"DELETE FROM categorias WHERE id = %s"
+        cursor.execute(query, (id_busca,))
+        conn.commit()
+        return cursor.rowcount
+
+    except Error as e:
+        conn.rollback()
+        print(f"❌ Erro ao deletar os itens: {e}")
+        return None
 
 
 if __name__== "__main__":
@@ -134,7 +393,14 @@ if __name__== "__main__":
 
         adicionar_produto = inserir_produto(conn, cursor, "produtos", produto1)
         print(f"ID_Camisa_Polo: {adicionar_produto}")
-
+        buscar_categorias = buscar_todas_categorias(conn, cursor)
+        buscar_produtos = buscar_todos_produtos(conn, cursor)
+        # print(buscar_categorias)
+        # print(buscar_produtos)
+        buscar_categorias_filtro = buscar_categoria_por_filtro(conn, cursor, filtros={"nome": 'bermudas',})
+        print(buscar_categorias_filtro)
+        buscar_produto_filtro = buscar_produtos_por_filtro(conn, cursor, filtros={"nome":"camisa", "preco_max":130})
+        print(buscar_produto_filtro)
 
         cursor.close()
         conn.close()
