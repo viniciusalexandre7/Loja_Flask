@@ -65,7 +65,6 @@ def criar_tabela_produtos(conn, cursor):
 
 def inserir_categoria(conn, cursor, nome_da_categoria):
     try:
-
         cursor.execute("SELECT id FROM categorias WHERE nome = %s",(nome_da_categoria,))
         resultado = cursor.fetchone()
         if resultado:
@@ -80,34 +79,32 @@ def inserir_categoria(conn, cursor, nome_da_categoria):
         print(f"❌ Erro ao inserir categoria '{nome_da_categoria}':", e)
         return None
 
-def inserir_produto(conn, cursor, tabela, dados_do_produto):
+def inserir_produto(conn, cursor, dados_do_produto):
 
     if not dados_do_produto:
             print("❌ Nenhum dado fornecido para inserção.")
             return None
-
     try:
-        nome = dados_do_produto.get("nome")
-        if nome:
-            cursor.execute(
-                "SELECT id FROM produtos WHERE nome = %s", (nome,))
-            resultado = cursor.fetchone()
-            if resultado:
-                return resultado[0]
+        sql = """INSERT INTO produtos(nome, descricao, preco, estoque, categoria_id)
+            VALUES (%s, %s, %s, %s, %s)"""
 
-        colunas = ", ".join(dados_do_produto.keys())
-        placeholders = ", ".join(["%s"] * len(dados_do_produto))
-        valores = tuple(dados_do_produto.values())
+        valores = (
+            dados_do_produto['nome'],
+            dados_do_produto['descricao'],
+            dados_do_produto['preco'],
+            dados_do_produto['estoque'],
+            dados_do_produto['categoria_id']
+        )
 
-        query = f"INSERT INTO {tabela} ({colunas}) VALUES ({placeholders})"
-
-        cursor.execute(query, valores)
+        cursor.execute(sql, valores)
         conn.commit()
+        
+        print(f"✅ Produto '{dados_do_produto['nome']}' inserido com sucesso com o ID: {cursor.lastrowid}")
         return cursor.lastrowid
 
     except Exception as e:
-        conn.rollback()
-        print(f"❌ Erro ao inserir na tabela '{tabela}':", e)
+        print(f"❌ Erro ao inserir produto: {e}")
+        conn.rollback() # Desfaz a operação em caso de erro.
         return None 
 
 def buscar_todas_categorias(conn, cursor):
@@ -157,6 +154,7 @@ def buscar_todos_produtos(conn, cursor):
     p.descricao,
     p.preco,
     p.estoque,
+    p.categoria_id,
     c.nome AS nome_categoria
     FROM produtos AS p
     JOIN categorias AS c ON p.categoria_id = c.id""")
