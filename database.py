@@ -116,6 +116,11 @@ def buscar_todas_categorias(conn, cursor):
         print(f"❌ Erro ao buscar categorias:", e)
         return None 
 
+def buscar_id_categoria(conn, cursor, nome_da_categoria):
+    cursor.execute("SELECT id FROM categorias WHERE nome = %s", (nome_da_categoria,))
+    resultado = cursor.fetchone()
+    return resultado[0] if resultado else None
+
 def buscar_categoria_por_filtro(conn, cursor, filtros={}):
     # Exemplo de filtros: {'id': 1, 'nome': 'camisas'}
     try:
@@ -150,7 +155,7 @@ def buscar_todos_produtos(conn, cursor):
     try:
         cursor.execute("""SELECT 
     p.id,
-    p.nome AS nome_produto,
+    p.nome,
     p.descricao,
     p.preco,
     p.estoque,
@@ -168,7 +173,14 @@ def buscar_produtos_por_filtro(conn, cursor, filtros={}):
     # Exemplo de filtros: {'nome': 'camisa polo', 'preco_max': 150.00}
     try:
         query = """
-            SELECT p.id, p.nome, p.descricao, p.preco, p.estoque, c.nome AS nome_categoria
+            SELECT 
+            p.id, 
+            p.nome, 
+            p.descricao, 
+            p.preco, 
+            p.estoque, 
+            p.categoria_id, 
+            c.nome AS nome_categoria
             FROM produtos AS p
             JOIN categorias AS c ON p.categoria_id = c.id
         """
@@ -195,6 +207,7 @@ def buscar_produtos_por_filtro(conn, cursor, filtros={}):
                 elif chave == 'estoque':
                     clausulas_where.append("p.estoque >= %s")
                     valores.append(valor)
+                
 
             if clausulas_where:
                 query += " WHERE " + " AND ".join(clausulas_where)

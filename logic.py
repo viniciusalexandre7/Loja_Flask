@@ -12,8 +12,8 @@ class Catalogo:
         return database.inserir_categoria(self.conn, self.cursor, nome_categoria)
     
     #dados do produto é um dict 
-    def criar_produto(self, nome_categoria, dados_do_produto):
-        id_categoria = database.inserir_categoria(self.conn, self.cursor, nome_categoria)
+    def adicionar_produto(self, nome_categoria, dados_do_produto):
+        id_categoria = database.buscar_id_categoria(self.conn, self.cursor, nome_categoria)
         if id_categoria is None:
             print("❌ Falha ao obter ID da categoria. O produto não será adicionado.")
             return None
