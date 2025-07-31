@@ -269,6 +269,21 @@ def atualizar_produto(conn, cursor, id_busca, novos_dados={}):
     if not id_busca or not novos_dados:
             print("❌ Dados fornecidos para a atualização estão ínvalidos.")
             return None
+
+    if "nome_categoria" in novos_dados:
+        nome_categoria = novos_dados["nome_categoria"]
+
+        cursor.execute("SELECT id FROM categorias WHERE nome = %s", (nome_categoria,))
+        resultado_categoria = cursor.fetchone()
+    
+        if resultado_categoria:
+            categoria_id = resultado_categoria[0] 
+            novos_dados["categoria_id"] = categoria_id
+            del novos_dados["nome_categoria"]
+        else:
+            print(f"❌ Categoria '{nome_categoria}' não encontrada.")
+            return None
+
     try:
         #aqui um list compresion em que vai interar cada valor dos dados e por um %s de acordo com dado interado, ex: nome = %s, preco_min = %s....
         clausulas_set = ", ".join([f"{coluna} = %s" for coluna in novos_dados.keys()])

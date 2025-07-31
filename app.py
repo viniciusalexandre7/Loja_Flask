@@ -27,10 +27,11 @@ def api_listar_produtos_por_id(produto_id):
 @app.route('/api/produtos', methods=['POST'])
 def api_adicionar_produto():
     dados_recebidos = request.json
-    campos_obrigatorios = ['nome', 'descricao', 'preco', 'estoque', 'nome_categoria']
-    if not all(campo in dados_recebidos for campo in campos_obrigatorios):
-        return jsonify({"erro": "Dados incompletos. Campos obrigatórios: nome, descricao, preco, estoque, nome_categoria"}), 400
-    
+    campos_obrigatorios = set(['nome', 'descricao', 'preco', 'estoque', 'nome_categoria'])
+    faltando = campos_obrigatorios - set(dados_recebidos.keys())
+    if faltando:
+        return jsonify({"erro": f"Campos ausentes: {', '.join(faltando)}"}), 400
+
     nome_categoria = dados_recebidos['nome_categoria']
 
     dados_do_produto = {
@@ -51,6 +52,52 @@ def api_adicionar_produto():
             return jsonify({"erro": "Produto criado, mas falha ao recuperar os dados."}), 500
     else:
         return jsonify({"erro": f"Falha ao criar o produto. A categoria '{nome_categoria}' não foi encontrada. Cadastre-a antes ou use uma categoria já existente."}), 400
+
+#===== PUT =====
+
+@app.route("/api/produtos/<int:produto_id>", methods=['PUT'])
+def atualizar_produto(produto_id):
+    dados_recebidos = request.json
+    colunas_permitidas = set(["descricao", "estoque", "nome", "nome_categoria", "preco"])
+    novos_dados = {}
+
+    for chave, valor in dados_recebidos.items():
+        if chave in colunas_permitidas and valor is not None:
+            novos_dados[chave] = valor
+
+    buscar_produto = catalogo.listar_produtos_por_filtro({'id': produto_id})
+
+    if not buscar_produto:
+        return jsonify({"erro": "Produto não encontrado"}), 404
+
+    dados_atualizados = catalogo.atualizar_produto(produto_id, novos_dados)
+
+    if dados_atualizados is not None:
+        produto_recarregado = catalogo.listar_produtos_por_filtro({'id': produto_id})
+        if dados_atualizados > 0:
+            return jsonify({"mensagem": "Produto atualizado com sucesso!","produto":produto_recarregado[0].to_dict(), 'url': f"/api/produtos/{produto_id}"}), 200
+        else:
+            return jsonify({"mensagem": "Nenhuma alteração foi feita. Os dados já estavam atualizados.","produto":produto_recarregado[0].to_dict(), 'url': f"/api/produtos/{produto_id}"}), 200
+    else:
+        return jsonify({"erro": f"Falha ao atualizar o produto, revise os dados antes de enviar."}), 400
+
+#===DELETE===
+
+@app.route("/api/produtos/<int:produto_id>", methods=['DELETE'])
+def deletar_produto(produto_id):
+    dados_recebidos = request.json
+    buscar_produto = catalogo.listar_produtos_por_filtro({'id': produto_id})
+
+    if not buscar_produto:
+        return jsonify({"erro": "Produto não encontrado"}), 404
+    try:
+        apagar_produto = catalogo.deletar_produto(produto_id)
+        if apagar_produto:
+            return jsonify({"mensagem": "Produto deletado com sucesso"}), 200
+        else:
+            return jsonify({"erro": "Falha ao deletar o produto. Nenhuma linha foi afetada."}), 400
+    except Exception as erro:
+        return jsonify({"erro": f"Erro interno ao tentar deletar: {str(erro)}"}), 500
 
 
 
