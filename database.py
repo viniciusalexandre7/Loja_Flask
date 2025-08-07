@@ -215,6 +215,12 @@ def buscar_produtos_por_filtro(conn, cursor, filtros={}):
                 elif chave == 'estoque':
                     clausulas_where.append("p.estoque >= %s")
                     valores.append(valor)
+                elif chave == 'categoria_id':
+                    clausulas_where.append("p.categoria_id = %s")
+                    valores.append(valor)
+                elif chave == 'nome_categoria':
+                    clausulas_where.append("c.nome = %s")
+                    valores.append(valor)
                 
             if clausulas_where:
                 query += " WHERE " + " AND ".join(clausulas_where)

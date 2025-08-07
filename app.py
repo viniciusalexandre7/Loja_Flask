@@ -33,7 +33,6 @@ def api_listar_categoria_por_id(categoria_id):
     categoria_id = {"id": categoria_id}
     id_buscado = catalogo.listar_categorias_por_filtro(categoria_id)
     categoria_em_dict = [categoria.to_dict() for categoria in id_buscado]
-    buscar_produtos_da_categoria = catalogo.listar_produtos_por_filtro({'nome_categoria':id_buscado[1]})
     if categoria_em_dict:
         return jsonify(categoria_em_dict)
     else:
@@ -47,8 +46,7 @@ def api_listar_categoria_por_id_com_produtos(categoria_id):
         return jsonify({"erro": "Categoria não encontrada"}), 404
     else:
         categoria = categoria_buscada[0].to_dict()
-        nome_categoria = categoria['nome']
-        produtos = catalogo.listar_produtos_por_filtro({'nome_categoria': nome_categoria})
+        produtos = catalogo.listar_produtos_por_filtro({'categoria_id': categoria_id})
         produtos_em_dict = [produto.to_dict() for produto in produtos]
         categoria['produtos'] = produtos_em_dict
         return jsonify(categoria), 200
@@ -172,7 +170,7 @@ def api_deletar_categoria(categoria_id):
     try:
         resultado = catalogo.deletar_categoria(categoria_id)
         if resultado:
-            return jsonify({"mensagem": "Categoria deletada com sucesso"}), 200
+            return jsonify({"mensagem": f"Categoria '{buscar_categoria[0].nome}' deletada com sucesso"}), 200
         else:
             return jsonify({"erro": "Falha ao deletar a Categoria. Nenhuma linha foi afetada."}), 400
     except Exception as erro:
