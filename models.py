@@ -7,7 +7,6 @@ class Categoria:
         return f"Categoria: {self.nome}"
 
     def to_dict(self):
-        
         return {
             'id':self.id,
             'nome':self.nome

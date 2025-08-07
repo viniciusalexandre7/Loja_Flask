@@ -66,5 +66,11 @@ class Catalogo:
         return database.deletar_produto(self.conn, self.cursor, id_busca)
 
     def fechar_conexao(self):
-        self.cursor.close()
-        self.conn.close()
+        try:
+            if self.cursor:
+                self.cursor.close()
+            if self.conn:
+                self.conn.close()
+            print("✅ Conexão com o banco fechada")
+        except Exception as e:
+            print(f"❌ Erro ao fechar conexão: {e}")

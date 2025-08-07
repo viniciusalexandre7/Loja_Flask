@@ -14,7 +14,7 @@ def conectar_bd():
 
        if conn:
         print("✅ Conexão bem sucedida")
-        cursor = conn.cursor()
+        cursor = conn.cursor(buffered=True)
         return conn, cursor
 
     except Error as e:
@@ -85,6 +85,14 @@ def inserir_produto(conn, cursor, dados_do_produto):
             print("❌ Nenhum dado fornecido para inserção.")
             return None
     try:
+        sql_verificacao = """SELECT id FROM produtos WHERE nome = %s"""
+        cursor.execute(sql_verificacao, (dados_do_produto['nome'],))
+        resultado = cursor.fetchone()
+
+        if resultado:
+            print(f"⚠️ Produto já existe com ID: {resultado[0]}. Inserção ignorada.")
+            return resultado[0]
+
         sql = """INSERT INTO produtos(nome, descricao, preco, estoque, categoria_id)
             VALUES (%s, %s, %s, %s, %s)"""
 
@@ -208,7 +216,6 @@ def buscar_produtos_por_filtro(conn, cursor, filtros={}):
                     clausulas_where.append("p.estoque >= %s")
                     valores.append(valor)
                 
-
             if clausulas_where:
                 query += " WHERE " + " AND ".join(clausulas_where)
 
